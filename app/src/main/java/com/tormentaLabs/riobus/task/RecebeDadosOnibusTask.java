@@ -67,7 +67,7 @@ public class RecebeDadosOnibusTask extends AsyncTask<String,Void, List<Ponto>> {
 
         HttpImpl http = HttpImpl.getInstance();
         List<NameValuePair> parametros = new ArrayList<NameValuePair>();
-        parametros.add(new BasicNameValuePair("linha", linha));
+        parametros.add(new BasicNameValuePair("busca", linha));
         Util.print(parametros.toString());
         Util.print(linha);
 

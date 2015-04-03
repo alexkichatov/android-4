@@ -5,7 +5,6 @@ import android.test.ActivityInstrumentationTestCase2;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.tormentaLabs.riobus.Main;
-import com.tormentaLabs.riobus.Main_;
 import com.tormentaLabs.riobus.R;
 
 /**
@@ -13,17 +12,17 @@ import com.tormentaLabs.riobus.R;
  */
 public class MainTest extends ActivityInstrumentationTestCase2 {
 
-    private Main_ act;
+    private Main act;
     GoogleMap mapa;
 
     public MainTest() {
-        super(Main_.class);
+        super(Main.class);
     }
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        act = (Main_) getActivity();
+        act = (Main) getActivity();
         mapa = act.mapa;
     }
 

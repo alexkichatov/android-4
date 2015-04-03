@@ -2,7 +2,10 @@ package com.tormentaLabs.riobus;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.location.GpsStatus;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
@@ -12,6 +15,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,26 +37,13 @@ import com.tormentaLabs.riobus.model.Ponto;
 import com.tormentaLabs.riobus.task.RecebeDadosOnibusTask;
 import com.tormentaLabs.riobus.util.Util;
 
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Click;
-import org.androidannotations.annotations.EActivity;
-import org.androidannotations.annotations.ViewById;
-
 import java.util.List;
 
-/**
- * Rio Bus
- *
- * @author Pedro Cortez
- * @version 2.0.0
- */
-@EActivity(R.layout.mapa)
 public class Main extends ActionBarActivity implements IRecebeDadosOnibus, GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
 
     public GoogleMap mapa; // Might be null if Google Play services APK is not available.
     GoogleApiClient mGoogleApiClient;
-    @ViewById
     public AutoCompleteTextView search;
 
     Location localizacaoAtual;
@@ -61,14 +52,26 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.mapa);
         buildGoogleApiClient();
-    }
-
-    @AfterViews
-    public void onViewCreatedByAA() {
         setUpMapIfNeeded();
         setSuggestions(); // Shows the previous searched lines
-        getSupportActionBar().hide();
+
+        LinearLayout button = (LinearLayout) findViewById(R.id.button_about);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Dialog dialog = new Dialog(Main.this);
+                dialog.setContentView(R.layout.about_dialog);
+                dialog.setTitle(getString(R.string.about_title));
+                TextView tv = (TextView) dialog.findViewById(R.id.content);
+                tv.setText(Html.fromHtml(getString(R.string.about_text)));
+                tv.setMovementMethod(LinkMovementMethod.getInstance());
+                dialog.show();
+            }
+        });
+
+
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -91,9 +94,6 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
         if (mapa != null) mapa.clear();
         super.onStop();
     }
-
-
-
 
     private void setSuggestions() {
         String[] lineHistory = Util.getHistory(this);
@@ -120,6 +120,7 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
             }
         }
 
+        search = (AutoCompleteTextView) findViewById(R.id.search);
         //Quando o usuario digita enter, ele faz a requisição procurando a posição daquela linha
         search.setOnKeyListener(new View.OnKeyListener() {
             @Override
@@ -163,8 +164,15 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
     public void recebeListaPontosCallback(List<Ponto> pontos, String mensagemErro) {
 
         mapa.clear();
-        LatLng posicaoCliente = new LatLng(localizacaoAtual.getLatitude(), localizacaoAtual.getLongitude());
-        marcarCliente(posicaoCliente);
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+
+
+        if(localizacaoAtual!=null){
+            LatLng posicaoCliente = new LatLng(localizacaoAtual.getLatitude(), localizacaoAtual.getLongitude());
+            marcarCliente(posicaoCliente);
+            builder.include(new LatLng(localizacaoAtual.getLatitude(), localizacaoAtual.getLongitude()));
+        }
 
         if (mensagemErro != null) {
             Toast.makeText(this, mensagemErro, Toast.LENGTH_LONG).show();
@@ -177,9 +185,6 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
             MarkerOnibusMapa mom = new MarkerOnibusMapa(this);
             mom.adicionaMarcadoresNoMapa(mapa, pontos);
 
-            LatLngBounds.Builder builder = new LatLngBounds.Builder();
-
-            builder.include(new LatLng(localizacaoAtual.getLatitude(), localizacaoAtual.getLongitude()));
 
             for (Ponto ponto : pontos) {
                 builder.include(new LatLng(ponto.getLatitude(), ponto.getLongitude()));
@@ -217,17 +222,6 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
         // depois de limpar tudo, precisa readicionar os pontos que estavam no mapa, caso houvesse
     }
 
-    @Click(R.id.button_about)
-    public void clicaNoSobre() {
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.about_dialog);
-        dialog.setTitle(getString(R.string.about_title));
-        TextView tv = (TextView) dialog.findViewById(R.id.content);
-        tv.setText(Html.fromHtml(getString(R.string.about_text)));
-        tv.setMovementMethod(LinkMovementMethod.getInstance());
-        dialog.show();
-    }
-
     @Override
     public void onConnected(Bundle bundle) {
         localizacaoAtual = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
@@ -238,7 +232,9 @@ public class Main extends ActionBarActivity implements IRecebeDadosOnibus, Googl
     public void onConnectionSuspended(int i) {
 
     }
+
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+
     }
 }
